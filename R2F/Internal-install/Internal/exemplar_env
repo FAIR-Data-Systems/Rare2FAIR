@@ -1,0 +1,13 @@
+# AN EXAMPLE .env (DOT env) file for docker-compose
+# what the CARE-SM transform will use as the base for all URLs it genereates
+# this DOES NOT HAVE TO RESOLVE - these are local identifiers.
+baseURI=http://my.domain.org/data/
+# user and password with write-permissions on the CDE database
+GraphDB_User=admin
+GraphDB_Pass=root
+# This is used by both Beacon and the Updater - must be active if you use either
+# These addresses are from the perspective of the Docker container 
+# (i.e. they are docker network addresses, not external URLs)
+# DATA_SPARQL_ENDPOINT=http://graphdb:7200/repositories/acme-r2f-internal
+# GRAPHDB_REPONAME=acme-r2f-internal
+

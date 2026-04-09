@@ -1,0 +1,14 @@
+version: '3.9'
+
+services:
+  fdp-config:
+    build: .
+    image: markw/erdera-fdp-config:latest
+    network_mode: host                    # ← Critical: lets container talk to localhost:PORT
+    stdin_open: true                      # ← Enables interactive input
+    tty: true                             # ← Enables terminal
+    environment:
+      - FDP_EMAIL=albert.einstein@example.com
+      - FDP_PASSWORD=password
+    # volumes:                            # Uncomment if you want to edit schemas without rebuilding
+    #   - ./Schemas:/app/Schemas:ro

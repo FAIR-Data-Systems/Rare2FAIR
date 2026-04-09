@@ -1,0 +1,5 @@
+source 'https://rubygems.org'
+
+gem 'fdp_client' # ← your custom gem
+gem 'json'
+gem 'rest-client'

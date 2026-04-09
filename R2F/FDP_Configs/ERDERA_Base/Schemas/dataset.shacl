@@ -1,0 +1,112 @@
+@prefix : <http://fairdatapoint.org/> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix dcat: <http://www.w3.org/ns/dcat#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix healthdcatap: <http://data.europa.eu/healthdcat-ap#> .
+@prefix adms: <http://www.w3.org/ns/adms#> .
+@prefix dpv: <https://w3id.org/dpv#> .
+@prefix dash: <http://datashapes.org/dash#> .
+
+:DatasetShape a sh:NodeShape ;
+    sh:targetClass dcat:Dataset ;
+
+    sh:property 
+    # [
+    #     sh:path healthdcatap:hdab ;
+    #     sh:name "Health Data Access Body (Germany is selected as an example default)" ;
+    #     sh:minCount 1 ;
+    #     sh:maxCount 1 ;
+    #     sh:nodeKind sh:IRI ;
+    #     sh:hasValue <http://example.org/hdab/national-health-authority-de> ;
+    #     sh:severity sh:Violation ;
+    #     dash:editor dash:URIEditor ;
+    #     dash:viewer dash:LabelViewer ;
+    #     sh:message "Dataset must have exactly one healthdcatap:hdab as an IRI" ;
+    # ] , 
+    [
+        sh:path healthdcatap:healthCategory ;
+        sh:name "Health Category (probably http://data.europa.eu/healthdcat-ap/vocabulary#RareDiseaseData, but you can look-up more specific categories in the EHDS Art.51 vocabulary )" ;
+        sh:hasValue <http://data.europa.eu/healthdcat-ap/vocabulary#RareDiseaseData> ;
+        sh:minCount 1 ;
+        sh:nodeKind sh:IRI ;
+        sh:severity sh:Violation ;
+        sh:message "Dataset must have at least one healthdcatap:healthCategory from EHDS Art.51 vocabulary" ;
+        dash:editor dash:URIEditor ;
+        dash:viewer dash:LabelViewer ;
+    ] , 
+    # [
+    #     sh:name "Provenance (URL to description of the data's origin)" ;
+    #     sh:path dct:provenance ;
+    #     sh:hasValue <http://example.org/provenance/rare-disease-registry-how-we-collect> ;
+    #     sh:minCount 1 ;
+    #     sh:nodeKind sh:IRI ;
+    #     sh:severity sh:Violation ;
+    #     sh:message "Dataset must have at least one dct:provenance statement" ;
+    #     dash:editor dash:URIEditor ;
+    #     dash:viewer dash:LabelViewer ;
+    # ] , 
+    [
+        sh:name "Spatial coverage (e.g. Europe: http://data.europa.eu/nuts/code/EU or Germany: http://data.europa.eu/nuts/code/DE)" ;
+        sh:path dct:spatial ;
+        sh:hasValue <http://data.europa.eu/nuts/code/EU> ;
+        sh:minCount 1 ;
+        sh:nodeKind sh:IRI ;
+        sh:severity sh:Violation ;
+        sh:message "Dataset must have at least one dct:spatial coverage" ;
+        dash:editor dash:URIEditor ;
+        dash:viewer dash:LabelViewer ;
+    ] , 
+    # [
+    #     sh:name "The purpose of the dataset (from the dpv vocabulary; default is research and development)" ;
+    #     sh:path dpv:hasPurpose ;
+    #     sh:hasValue <https://w3id.org/dpv#ResearchAndDevelopment> ;
+    #     sh:minCount 1 ;
+    #     sh:nodeKind sh:IRI ;
+    #     sh:severity sh:Violation ;
+    #     sh:message "Dataset must have at least one dpv:hasPurpose" ;
+    #     dash:editor dash:URIEditor ;
+    #     dash:viewer dash:LabelViewer ;
+    # ] , 
+    # [
+    #     sh:name "Link to some sample data (required, but you can use the link to your Distribution if you don't have a smaller example)" ;
+    #     sh:path adms:sample ;
+    #     sh:minCount 1 ;
+    #     sh:nodeKind sh:IRI ;
+    #     sh:severity sh:Violation ;
+    #     sh:message "Non-public dataset must have at least one adms:sample distribution" ;
+    #     dash:editor dash:URIEditor ;
+    #     dash:viewer dash:LabelViewer ;
+    # ] , 
+    # [
+    #     sh:name "This will always be 'PERSONAL DATA' in EJP, so leave the default unless you know what you're doing" ;
+    #     sh:path dct:type ;
+    #     sh:minCount 1 ;
+    #     sh:maxCount 1 ;
+    #     sh:nodeKind sh:IRI ;
+    #     sh:hasValue <http://data.europa.eu/930/dataset-type/PERSONAL_DATA> ;
+    #     sh:severity sh:Violation ;
+    #     sh:message "Non-public dataset must have dct:type set to PERSONAL_DATA" ;
+    #     dash:editor dash:URIEditor ;
+    #     dash:viewer dash:LabelViewer ;
+    # ] , 
+    [
+        sh:name "Personal Data? (default should be https://w3id.org/dpv#HealthData if you don't know otherwise)" ;
+        sh:path dpv:hasPersonalData ;
+        sh:hasValue dpv:HealthData ;
+        sh:minCount 1 ;
+        sh:nodeKind sh:IRI ;
+        sh:severity sh:Violation ;
+        sh:message "Dataset should specify dpv:hasPersonalData for sensitive data" ;
+        dash:editor dash:URIEditor ;
+        dash:viewer dash:LabelViewer ;
+    ] , [
+        sh:name "Health Theme (minimally: http://www.wikidata.org/entity/Q55789681 'rare disease', but you can look-up more specific themes)" ;
+        sh:path healthdcatap:healthTheme ;
+        sh:hasValue <http://www.wikidata.org/entity/Q55789681> ;
+        sh:minCount 1 ;
+        sh:nodeKind sh:IRI ;
+        sh:severity sh:Violation ;
+        sh:message "Dataset must have at least one healthdcatap:healthTheme (Wikidata URI)" ;
+        dash:editor dash:URIEditor ;
+        dash:viewer dash:LabelViewer ;
+    ] .

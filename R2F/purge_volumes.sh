@@ -1,0 +1,1 @@
+docker volume ls -q | grep '^r2f' | xargs -r docker volume rm -f
