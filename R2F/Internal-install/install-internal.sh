@@ -137,21 +137,21 @@ sleep 60
 "docker-compose-${P}.yml"
 
 echo ""
-echo -e "${GREEN}Creating a R2F Internal Component Production Server folder in ${NC} ./${P}-R2F-Internal/"
+echo -e "${GREEN}Creating a R2F Internal Component Production Server folder in ${NC} ./${P}-R2F-internal/"
 echo ""
 
 cd ..
-mkdir ./${P}-R2F-Internal
-cp -r ./R2F-Internal/data ./${P}-R2F-Internal/
-cp ./R2F-Internal/.env_template "./${P}-R2F-Internal/.env"
+mkdir ./${P}-R2F-internal
+cp -r ./R2F-internal/data ./${P}-R2F-internal/
+cp ./R2F-internal/.env_template "./${P}-R2F-internal/.env"
 
-cp ./docker-compose-template.yml "./${P}-R2F-Internal/docker-compose-${P}.yml"
-sed -i'' -e "s/{PREFIX}/${P}/" "./${P}-R2F-Internal/docker-compose-${P}.yml"
-sed -i'' -e "s/{GDB_PORT}/${GDB_PORT}/" "./${P}-R2F-Internal/docker-compose-${P}.yml"
-# sed -i'' -e "s/{BEACON_PORT}/${BEACON_PORT}/" "./${P}-R2F-Internal/docker-compose-${P}.yml"
-sed -i'' -e "s/{RDF_TRIGGER}/${RDF_TRIGGER}/" "./${P}-R2F-Internal/docker-compose-${P}.yml"
-sed -i'' -e "s/{R2F_DB_NAME}/${P}-R2F-Internal/" "./${P}-R2F-Internal/.env"
-# sed -i'' -e 's|{GUID}|'"${uri}"'|g' "./${P}-R2F-Internal/.env"
+cp ./docker-compose-template.yml "./${P}-R2F-internal/docker-compose-${P}.yml"
+sed -i'' -e "s/{PREFIX}/${P}/" "./${P}-R2F-internal/docker-compose-${P}.yml"
+sed -i'' -e "s/{GDB_PORT}/${GDB_PORT}/" "./${P}-R2F-internal/docker-compose-${P}.yml"
+# sed -i'' -e "s/{BEACON_PORT}/${BEACON_PORT}/" "./${P}-R2F-internal/docker-compose-${P}.yml"
+sed -i'' -e "s/{RDF_TRIGGER}/${RDF_TRIGGER}/" "./${P}-R2F-internal/docker-compose-${P}.yml"
+sed -i'' -e "s/{R2F_DB_NAME}/${P}-R2F-internal/" "./${P}-R2F-internal/.env"
+# sed -i'' -e 's|{GUID}|'"${uri}"'|g' "./${P}-R2F-internal/.env"
 echo ""
 echo ""
 echo -e "${GREEN}Installation Complete!"
@@ -169,7 +169,7 @@ echo ""
 echo -e "${GREEN}DONE!"
 echo ""
 echo ""
-echo -e "Please now move into the ${NC} ./${P}-R2F-Internal/ ${GREEN} folder where the full version of the docker-compose-{P}.yml file lives."
+echo -e "Please now move into the ${NC} ./${P}-R2F-internal/ ${GREEN} folder where the full version of the docker-compose-{P}.yml file lives."
 echo ""
 echo -e "${GREEN}To start the SECURE ENVIRONMENT R2F Internal Component DATA SERVER, cd to that folder (or move it elsewhere) and and type:  "
 echo -e "docker-compose -f docker-compose-${P}.yml up -d ${NC}"

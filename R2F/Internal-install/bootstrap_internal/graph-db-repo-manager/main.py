@@ -75,9 +75,9 @@ def secure_graphdb(graphdb_url):
 
 def main(graphdb_url):
     '''
-    Create R2F-Internal repository in graph DB
+    Create R2F-internal repository in graph DB
     '''
-    repo_id = GDB_PREFIX + "-r2f-internal"
+    repo_id = GDB_PREFIX + "-R2F-internal"
     repo_description = "Repository to store CARE-SM RDF Data"
     create_repository(graphdb_url, repo_id, repo_description)
     print(repo_id + " Created")
