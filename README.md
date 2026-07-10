@@ -3,6 +3,8 @@
 
 # Rare2FAIR
 
+**Version:** 1.0.0 &nbsp;|&nbsp; [Changelog](CHANGELOG.md)
+
 Software to support FAIR Metadata and FAIR Data  authoring and publishing.
 
 
