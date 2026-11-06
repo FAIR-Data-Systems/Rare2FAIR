@@ -4,6 +4,46 @@ All notable changes to Rare2FAIR are documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.0.0] - 2026-11-06
+
+Full migration onto the architecture Sextans Suite has been running since its own 2.0.0-3.2.0
+releases, ported now that it's been tested there for several months. Every component image is
+also freshly rebuilt/rescanned as of this release (`fairdatasystems/*:2026-11-06`).
+
+### Changed
+
+- **Internal: GraphDB → Virtuoso, CARE-SM v1 → CARE-SM-2.** `graph-db-repo-manager` (the bootstrap
+  component that created a GraphDB repository via its REST API) is gone entirely — Virtuoso has no
+  separate "repository" concept; isolation between installs comes from each running its own
+  Virtuoso container/volume. `install-internal.sh` now prompts for and sets a Virtuoso `dba`
+  password (minimum 12 characters) instead of GraphDB's separate security-enablement step, and a
+  one-time SQL script (`virtuoso-initdb/lockdown-anonymous-sparql.sql`) locks down anonymous
+  `/sparql` reads on first database creation. The transformation pipeline (`cde-box-daemon`,
+  `yarrrml-rdfizer`, `caresm`) now runs the CARE-SM-2 Toolkit (images `cdeb2`/`care2`, up from the
+  CARE-SM v1-based `cdeb`/`care`) — including CARE-SM-2's custom-datatype support
+  (`R2F-internal/data/custom/<name>.csv` + matching YARRRML) and auto-pulled, smoke-tested upstream
+  mapping updates on every transformation trigger. The two stale, committed
+  `R2F-internal/data/CARE_yarrrml*.yaml` files are removed — the pipeline generates these at
+  runtime now, they were never meant to be static repo content.
+- **External: GraphDB → Virtuoso**, same architecture change as Internal, plus MongoDB
+  authentication is now enabled by default (`MONGO_INITDB_ROOT_USERNAME`/`_PASSWORD`, a freshly
+  generated password per install) and the FDP server's JWT signing secret is generated fresh per
+  install (`openssl rand -hex 64`) rather than a fixed shared value.
+- `FDP_Configs/ERDERA_Base/Dockerfile` now runs as a non-root `erdera` user (parity with Sextans
+  Suite — this had fallen out of sync).
+
+### Fixed
+
+- **`install-internal.sh`'s data-folder permissions now cover files added after install, not just
+  what's present at install time.** `cde-box-daemon`/`yarrrml-rdfizer` run as a fixed container UID
+  that generally won't match the host user, so the installer opens `R2F-internal/data` to any
+  local user (`chmod -R o+rwX`) — previously a one-time step that never touched anything you added
+  later (a new CSV, a `data/custom/` folder you create yourself), which could make a transformation
+  fail against a brand-new file. The installer now also sets a default ACL (`setfacl`, when the
+  `acl` package is available) so new files/folders inherit the same permissions automatically, with
+  a printed warning and manual fallback when `setfacl` isn't available. Ported from the same fix in
+  Sextans Suite ([wilkinsonlab/Sextans-Suite#5](https://github.com/wilkinsonlab/Sextans-Suite/issues/5)).
+
 ## [1.0.0] - 2026-07-10
 
 ### Added

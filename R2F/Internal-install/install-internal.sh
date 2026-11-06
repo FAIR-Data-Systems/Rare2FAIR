@@ -22,8 +22,7 @@ fi
 function ctrl_c() {
         $DOCKER_COMPOSE -f "$CWD/bootstrap_internal/docker-compose-${P}.yml" down
         $DOCKER_COMPOSE rm -f "$CWD/bootstrap_internal/docker-compose-${P}.yml" -s
-        docker network rm bootstrap_internal_default bootstrap_graphdb_net
-        docker rmi -f bootstrap_internal_graph_db_repo_manager:latest
+        docker network rm bootstrap_internal_default bootstrap_internal_virtuoso_net
 
         rm "${CWD}/bootstrap_internal/docker-compose-${P}.yml"
 
@@ -58,7 +57,7 @@ is_banned_port() {
 echo ""
 echo ""
 echo ""
-echo "R2F Internal Component Server Secure Environment Installation"
+echo "R2F Internal Server Secure Environment Installation"
 echo ""
 echo ""
 echo ""
@@ -74,23 +73,24 @@ fi
 echo ""
 echo ""
 echo ""
-# GDB_PORT handling
-if [ -z "$GDB_PORT" ]; then
-  read -p "Enter the port where your GraphDB will serve (e.g. 7200): " GDB_PORT
+# VIRTUOSO_PORT handling (GDB_PORT is the pre-rename name, still honoured if set)
+VIRTUOSO_PORT="${VIRTUOSO_PORT:-$GDB_PORT}"
+if [ -z "$VIRTUOSO_PORT" ]; then
+  read -p "Enter the port where your Virtuoso database will serve (e.g. 8890): " VIRTUOSO_PORT
 fi
 
-if [ -z "$GDB_PORT" ]; then
-  echo "Error: No port specified for GraphDB."
+if [ -z "$VIRTUOSO_PORT" ]; then
+  echo "Error: No port specified for Virtuoso."
   exit 1
 fi
 
-if ! [[ "$GDB_PORT" =~ ^[0-9]+$ ]] || (( GDB_PORT < 1 || GDB_PORT > 65535 )); then
-  echo "Error: Invalid port '$GDB_PORT' – must be a number between 1 and 65535."
+if ! [[ "$VIRTUOSO_PORT" =~ ^[0-9]+$ ]] || (( VIRTUOSO_PORT < 1 || VIRTUOSO_PORT > 65535 )); then
+  echo "Error: Invalid port '$VIRTUOSO_PORT' – must be a number between 1 and 65535."
   exit 1
 fi
 
-if is_banned_port "$GDB_PORT"; then
-  echo "Error: Port $GDB_PORT is restricted in many web browsers (including Firefox and Chrome) for security reasons."
+if is_banned_port "$VIRTUOSO_PORT"; then
+  echo "Error: Port $VIRTUOSO_PORT is restricted in many web browsers (including Firefox and Chrome) for security reasons."
   echo "This will prevent users from connecting to your server through those browsers."
   echo "Please choose a different port. Safe common options include 3000, 4000, 5000, 7200, 8080, 8000, or 9000."
   exit 1
@@ -108,62 +108,112 @@ if [ -z $RDF_TRIGGER ]; then
 fi
 
 
+echo ""
+echo ""
+echo ""
+# Virtuoso DBA password handling
+# Virtuoso's `dba` superuser password is set directly from this value via the
+# image's own DBA_PASSWORD environment variable at container start -- no
+# separate admin-API call needed (unlike GraphDB's REST-based security model).
+# GRAPHDB_PASSWORD is the pre-rename name, still honoured if set
+VIRTUOSO_PASSWORD="${VIRTUOSO_PASSWORD:-$GRAPHDB_PASSWORD}"
+if [ -z "$VIRTUOSO_PASSWORD" ]; then
+  echo "Choose a password for Virtuoso's 'dba' superuser account."
+  read -s -p "Enter a Virtuoso dba password (min 12 characters): " VIRTUOSO_PASSWORD
+  echo ""
+fi
+
+if [ -z "$VIRTUOSO_PASSWORD" ] || [ "${#VIRTUOSO_PASSWORD}" -lt 12 ] || [ "$VIRTUOSO_PASSWORD" = "root" ] || [ "$VIRTUOSO_PASSWORD" = "admin" ] || [ "$VIRTUOSO_PASSWORD" = "dba" ]; then
+  echo "Error: Virtuoso dba password must be at least 12 characters and not a common default such as 'root', 'admin', or 'dba'."
+  exit 1
+fi
 
 
-# if [ -z $BEACON_PORT ]; then
-#   read -p  "Enter the port where your Beacon2 will serve (e.g. 8000) (set this, even if not used): " BEACON_PORT
-#   if [ -z $BEACON_PORT ]; then
-#     echo "invalid..."
-#     exit 1
-#   fi
-# fi
 
 
-mkdir $HOME/tmp
+mkdir -p $HOME/tmp
 export TMPDIR=$HOME/tmp
 # needed by the main.py script
-export GDB_PREFIX=$P
 
-docker network rm bootstrap_internal_default
-# this next line might throw an error if there was never a previous installation - that's fine!
-docker ps -a | egrep -oh "${P}-R2F.*" | xargs docker rm
-docker rm -f  bootstrap_internal_graphdb_1 
-docker volume remove -f "${P}-graphdb"
+# The next few lines clean up any previous installation with this prefix. On a
+# fresh, first-ever install there is nothing to clean up, so each of these is
+# expected to be a harmless no-op -- silenced rather than left to print scary
+# but meaningless "not found"/"requires at least 1 argument" errors.
+docker network rm bootstrap_internal_default 2>/dev/null || true
+docker ps -a | egrep -oh "${P}-R2F.*" | xargs -r docker rm
+docker rm -f bootstrap_internal-virtuoso-1 2>/dev/null || true
+docker volume remove -f "${P}-virtuoso" 2>/dev/null || true
 
-docker volume create "${P}-graphdb"
+docker volume create "${P}-virtuoso"
 
 echo ""
 echo ""
-echo -e "${GREEN}Creating GraphDB and bootstrapping it - this will take about a minute"
+echo -e "${GREEN}Creating Virtuoso and bootstrapping it - this will take about a minute"
 echo -e "${NC}"
 echo ""
 
 cd bootstrap_internal
 cp docker-compose-template.yml "docker-compose-${P}.yml"
 sed -i'' -e "s/{PREFIX}/${P}/" "docker-compose-${P}.yml"
-sed -i'' -e "s/{GDB_PORT}/${GDB_PORT}/" "docker-compose-${P}.yml"
+sed -i'' -e "s/{VIRTUOSO_PORT}/${VIRTUOSO_PORT}/" "docker-compose-${P}.yml"
+sed -i'' -e "s%{VIRTUOSO_PASS}%${VIRTUOSO_PASSWORD}%" "docker-compose-${P}.yml"
 
 $DOCKER_COMPOSE -f "docker-compose-${P}.yml" up --build -d
 #$DOCKER_COMPOSE -f "docker-compose-${P}.yml" up --build
 sleep 60
-rm "docker-compose-${P}.yml"
+# Do NOT delete docker-compose-${P}.yml here -- the post-install clean-up below
+# still needs it to tear down this bootstrap Virtuoso container/network. Deleting
+# it this early made that teardown silently fail ("no such file or directory"),
+# leaving the bootstrap container and network orphaned on every install.
 
 echo ""
-echo -e "${GREEN}Creating a R2F Internal Component Production Server folder in ${NC} ./${P}-R2F-internal/"
+echo -e "${GREEN}Creating a R2F Internal Production Server folder in ${NC} ./${P}-R2F-internal/"
 echo ""
 
 cd ..
+rm -rf ./${P}-R2F-internal
 mkdir ./${P}-R2F-internal
 cp -r ./R2F-internal/data ./${P}-R2F-internal/
+# cde-box-daemon and yarrrml-rdfizer run as fixed-UID non-root users inside their
+# containers, which won't generally match your host UID -- open this bind-mounted
+# data directory to any user so both containers can read/write it regardless.
+chmod -R o+rwX ./${P}-R2F-internal/data
+# The chmod above only covers what's already in this folder right now (the
+# sample Diagnosis.csv). It is NOT a one-time setup step -- this is the folder
+# you keep dropping new CSV/YARRRML files into for every future transformation
+# (including a data/custom/ folder you create yourself later), and none of
+# those later additions would get opened up the same way, which a user hit as
+# a transformation failing against a brand-new file. A default
+# ACL makes every file/directory created under here from now on inherit the
+# same "other rwX" permission automatically, without needing to re-run chmod
+# by hand each time.
+if command -v setfacl >/dev/null 2>&1; then
+  if ! setfacl -R -d -m o::rwx ./${P}-R2F-internal/data 2>/dev/null || ! setfacl -R -m o::rwx ./${P}-R2F-internal/data 2>/dev/null; then
+    echo -e "${RED}Warning: setfacl failed on ./${P}-R2F-internal/data (filesystem may not support ACLs).${NC}"
+    echo -e "${RED}Any CSV/YARRRML file you add to that folder later will need${NC}"
+    echo -e "${RED}'chmod -R o+rwX ./${P}-R2F-internal/data' run by hand before triggering a transformation.${NC}"
+  fi
+else
+  echo -e "${RED}Warning: 'setfacl' (package 'acl') not found.${NC}"
+  echo -e "${RED}Any CSV/YARRRML file you add to ./${P}-R2F-internal/data later will need${NC}"
+  echo -e "${RED}'chmod -R o+rwX ./${P}-R2F-internal/data' run by hand before triggering a transformation,${NC}"
+  echo -e "${RED}or install the 'acl' package so this is handled for you automatically next install.${NC}"
+fi
+# Only takes effect if the bootstrap step above didn't already create the
+# database (see docker-compose-template.yml's own comment on this mount) --
+# copied here too so the final compose file is self-contained if this folder
+# is later moved elsewhere, per this script's own instructions below.
+cp -r ./virtuoso-initdb ./${P}-R2F-internal/
 cp ./R2F-internal/.env_template "./${P}-R2F-internal/.env"
 
 cp ./docker-compose-template.yml "./${P}-R2F-internal/docker-compose-${P}.yml"
 sed -i'' -e "s/{PREFIX}/${P}/" "./${P}-R2F-internal/docker-compose-${P}.yml"
-sed -i'' -e "s/{GDB_PORT}/${GDB_PORT}/" "./${P}-R2F-internal/docker-compose-${P}.yml"
-# sed -i'' -e "s/{BEACON_PORT}/${BEACON_PORT}/" "./${P}-R2F-internal/docker-compose-${P}.yml"
+sed -i'' -e "s/{VIRTUOSO_PORT}/${VIRTUOSO_PORT}/" "./${P}-R2F-internal/docker-compose-${P}.yml"
 sed -i'' -e "s/{RDF_TRIGGER}/${RDF_TRIGGER}/" "./${P}-R2F-internal/docker-compose-${P}.yml"
-sed -i'' -e "s/{R2F_DB_NAME}/${P}-R2F-internal/" "./${P}-R2F-internal/.env"
+sed -i'' -e "s/{R2F_DB_NAME}/${P}-r2f-internal/" "./${P}-R2F-internal/.env"
+sed -i'' -e "s%{VIRTUOSO_PASS}%${VIRTUOSO_PASSWORD}%" "./${P}-R2F-internal/.env"
 # sed -i'' -e 's|{GUID}|'"${uri}"'|g' "./${P}-R2F-internal/.env"
+chmod 600 "./${P}-R2F-internal/.env"
 echo ""
 echo ""
 echo -e "${GREEN}Installation Complete!"
@@ -172,8 +222,11 @@ echo -e "${GREEN}Now doing post-install clean-up..."
 
 $DOCKER_COMPOSE -f "${CWD}/bootstrap_internal/docker-compose-${P}.yml" down
 $DOCKER_COMPOSE -f "${CWD}/bootstrap_internal/docker-compose-${P}.yml" rm -s -f
-docker network rm bootstrap_internal_default bootstrap_internal_graphdb_net
-docker rmi -f bootstrap_internal-graph_db_repo_manager:latest
+# `down` above already removes the bootstrap compose project's own network
+# (bootstrap_internal_virtuoso_net); bootstrap_internal_default never existed for this
+# compose file in the first place. Both are harmless no-ops here -- silenced
+# rather than left to print misleading "not found" errors after a clean down.
+docker network rm bootstrap_internal_default bootstrap_internal_virtuoso_net 2>/dev/null || true
 
 rm "${CWD}/bootstrap_internal/docker-compose-${P}.yml"
 
@@ -183,7 +236,11 @@ echo ""
 echo ""
 echo -e "Please now move into the ${NC} ./${P}-R2F-internal/ ${GREEN} folder where the full version of the docker-compose-{P}.yml file lives."
 echo ""
-echo -e "${GREEN}To start the SECURE ENVIRONMENT R2F Internal Component DATA SERVER, cd to that folder (or move it elsewhere) and and type:  "
+echo -e "${GREEN}To start the SECURE ENVIRONMENT R2F INTERNAL DATA SERVER, cd to that folder (or move it elsewhere) and and type:  "
 echo -e "$DOCKER_COMPOSE -f docker-compose-${P}.yml up -d ${NC}"
+echo ""
+echo -e "${GREEN}Security note:${NC} the Virtuoso dba password has already been set to what you provided"
+echo -e "during this install, stored (mode 600) in ./${P}-R2F-internal/.env. There is nothing further"
+echo -e "you need to change there before going into production."
 echo ""
 

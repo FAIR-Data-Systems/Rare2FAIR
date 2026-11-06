@@ -1,20 +1,20 @@
 # R2F External Installation
 
-R2F External is the Metadata service of Rare2FAIR.  
+R2F External is the Metadata service of the Rare2FAIR.  
 
 It consists of 4 "dockreized" components, all of them _mandatory_ and all of them _must be running at all times._
 
 - FDP Client - Provides the Web front-end
 - FDP Server - Provides the metadata access and talks to front-end
 - MongoDB - holds database schema and user authentication information
-- GraphDB - holds the RDF metadata for the overall service
+- Virtuoso - holds the RDF metadata for the overall service
 
 
 ## CONTENTS
 
 - [Installation requirements](#requirements)
-- [Downloading R2F External](#downloading)
-- [Installing R2F External](#installing)
+- [Downloading External](#downloading)
+- [Installing External](#installing)
 - [Configuring for ERDERA](#configuring)
 - [Securing your Server](#securing)
 - [Branding and Personalizing](#branding)
@@ -48,7 +48,7 @@ To use R2F External you `must` meet the following requirements.
 To get R2F External clone this repository to your machine.
 
 ```sh
-https://github.com/FAIR-Data-Systems/Rare2FAIR.git
+git clone https://github.com/FAIR-Data-Systems/Rare2FAIR.git
 ```
 
 ---
@@ -62,60 +62,75 @@ https://github.com/FAIR-Data-Systems/Rare2FAIR.git
 
 ## Preparing for Installation
 
-At the beginning of the installation process you are asked three questions:
+At the beginning of the installation process you are asked four questions:
 
 ### A Prefix for your installation
-The prefix is used as a "namespace" to isolate indepdent R2F External installations from one another.  This allows you to run multiple Metadata servers on the same machine.  The prefix is used for the docker network, docker volumes, and appears in the configuration files and docker-compose yaml files.  This can be any set of letter/number characters.  Please do not use punctuation characters.  e.g. 'euronmd1'  We will use *'ACME'* for the remainder of this document.
+The prefix is used as a "namespace" to isolate indepdent External installations from one another.  This allows you to run multiple Metadata servers on the same machine.  The prefix is used for the docker network, docker volumes, and appears in the configuration files and docker-compose yaml files.  This can be any set of letter/number characters.  Please do not use punctuation characters.  e.g. 'euronmd1'  We will use *'ACME'* for the remainder of this document.
 
 ### Your permanent GUID
 For production installations, you should have already decided what your server URL will be, you should have already set up a Permanent Identifier redirect (e.g. using w3id), and you should already have a reverse proxy on your server to manage incoming requests from that redirect and point them at a specific localhost:PORT.  
 
-For test installations, you can use a localhost:PORT address here.  Everything will work, but you cannot register your server in the central metadata index (e.g. the ERDERA VP Index). In this case, your PORT must match your answer to the next question about R2F External Server port.
+For test installations, you can use a localhost:PORT address here.  Everything will work, but you cannot register your server in the central metadata index (e.g. the ERDERA VP Index). In this case, your PORT must match your answer to the next question about External Server port.
 
-### Port for your R2F External Server
+### Port for your External Server
 This is the port that will be used by the FDP Client component.  This is validated against a list of "banned" ports (ports that are likely to be used by other software on your system).  It is a good idea to stay in the range of ~4000-10000.  If you have already set up an SSL proxy, this is the port that your proxy will point to.
 
-### Port for your GraphDB
-This is the port that will be used by the GraphDB metadata database component.  This is validated against a list of "banned" ports (ports that are likely to be used by other software on your system).  It is a good idea to stay in the range of ~4000-10000. 
-By detault, this port is disabled after installation, so your graphdb cannot be accessed.  You will need to enable it, at least once, to login to GraphDB's web page and create a secure user for your R2F External server (and change the login for the Admin user!).  This port does NOT need to be enabled for the regular operation of R2F External, and should be disabled when not needed.
+### Port for your Virtuoso database
+This is the port that will be used by the Virtuoso metadata database component.  This is validated against a list of "banned" ports (ports that are likely to be used by other software on your system).  It is a good idea to stay in the range of ~4000-10000. 
+By default, this port is disabled after installation, so your Virtuoso instance cannot be accessed.  This port does NOT need to be enabled for the regular operation of External, and should be disabled when not needed.
+
+### Virtuoso dba password
+Virtuoso ships with no password set for its `dba` superuser until one is configured. The
+installer asks you to choose a password (minimum 12 characters) and configures Virtuoso with it
+automatically during installation, via the container's own `DBA_PASSWORD` startup setting. Keep
+this password somewhere safe; it is also written into the generated `application-ACME.yml` file
+(mode 644 -- the `fdp` container needs to read it as its own user, not yours) and `.env` file
+(mode 600) in your production server folder.
+
+### MongoDB root password
+You are not asked for this one -- a random password is generated automatically during
+installation (same convention as the FDP server's JWT signing secret) and configures MongoDB's
+root user via the container's own `MONGO_INITDB_ROOT_USERNAME`/`_PASSWORD` startup settings. As
+with the Virtuoso password above, this is written into `application-ACME.yml` (mode 644) and
+`.env` (mode 600); there is nothing you need to do to enable it.
 
 
 ## Installing R2F External
 
-Once you have completed the "Downloading" section of this tutorial, and you have prepared your answers to the questions, cd into the `/R2F External-install/` folder and run the instaler.
+Once you have completed the "Downloading" section of this tutorial, and you have prepared your answers to the questions, cd into the `/External-install/` folder and run the instaler.
 
 ```
 bash ./install-external.sh
 ```
 
-This script will bootstrap your FAIR Data Point and its associated GraphDB.  It creates a databases in GraphDB called *ACME-r2f-external*. This is the database that you will need to secure after installation.
+This script will bootstrap your FAIR Data Point and its associated Virtuoso instance, secured with the password you chose. Your metadata is stored in Virtuoso's single database (unlike GraphDB, it has no separate "repositories" to create).
 
 ### If you abort installation before it completes...
 
-This can (and probably will) leave you in a state that needs some careful attention.  In particular, find any graph-db Docker Volumes *_that have your PREFIX_* and remove them `docker volume rm ACME-graph-db`.  If it will not delete, it will be due to the existence of a docker container that uses it.  You can safely delete this docker container also.  `docker rm AJDIRDjdsfhwe83hewfewkw5`.  Again, make sure you are deleting the right things!
+This can (and probably will) leave you in a state that needs some careful attention.  In particular, find any Virtuoso Docker Volumes *_that have your PREFIX_* and remove them `docker volume rm ACME-virtuoso`.  If it will not delete, it will be due to the existence of a docker container that uses it.  You can safely delete this docker container also.  `docker rm AJDIRDjdsfhwe83hewfewkw5`.  Again, make sure you are deleting the right things!
 
 
 ### The folder with your final server configuration
 
-The installer will create a sub-folder `ACME-R2F-External underneath the folder where you ran your installation. This folder contains all of your server configuration files.  You can copy this folder anywhere on your system, e.g. to keep your servers all in one folder outside of your GitHub copy.  Inside that folder is a customized docker-compose file (docker-compose-ACME.yml) for your deployment.  So for example, you would issue the commands:
+The installer will create a sub-folder `ACME-R2F-external` underneath the folder where you ran your installation. This folder contains all of your server configuration files.  You can copy this folder anywhere on your system, e.g. to keep your servers all in one folder outside of your GitHub copy.  Inside that folder is a customized docker-compose file (docker-compose-ACME.yml) for your deployment.  So for example, you would issue the commands:
 
 ```
 
-cp -r ACME-R2F-External ~/SERVERS/
-cd ~/SERVERS/ACME-R2F-External
+cp -r ACME-R2F-external ~/SERVERS/
+cd ~/SERVERS/ACME-R2F-external
 docker-compose -f docker-compose-ACME.yml up
 
 ```
 
-Your R2F External server is now running at whatever port you selected.
+Your External server is now running at whatever port you selected.
 
 <a name="configuring"></a>
 
 ## Configuring for ERDERA
 
-There is a docker image that will auto-configure your R2F External server to be compliant with ERDERA metadata expectations.
+There is a docker image that will auto-configure your External server to be compliant with ERDERA metadata expectations.
 
-    1. with the R2F External server still running....
+    1. with the External server still running....
     2. cd into `FDP_Configs/ERDERA_Base/`
     3. run the configuration script:
 
@@ -133,25 +148,66 @@ __Nota Bene: This script can only be run one time!__  Please do not run it again
 
 ## Securing your R2F External server
 
-There are two components that you need to secure:  GraphDB and the FAIR Data Point Client.
+There are two components that you need to be aware of:  Virtuoso and the FAIR Data Point Client.
 
-These are the default login details and locations:
-
-#### GraphDB
+#### Virtuoso
 
 | Service name | Local deployment                                | Production deployment |
 | ------------ | ----------------------------------------------- | --------------------- |
-| GraphDB      | [http://localhost:7200](http://localhost:7200/) | SHOULD NOT BE VISIBLE |
+| Virtuoso     | [http://localhost:8890](http://localhost:8890/) | SHOULD NOT BE VISIBLE |
+
+The installer already does the following for you automatically, using the password you provided
+at the "Virtuoso dba password" prompt:
+
+1.  Set the `dba` superuser's password -- done automatically during installation, via Virtuoso's
+    own `DBA_PASSWORD` startup setting. Your chosen password is stored (file mode 600) in
+    `application-ACME.yml` and `.env`, alongside a freshly-generated JWT signing secret for the
+    FDP server (also no longer a fixed shared value). Unlike GraphDB, there's no separate "turn
+    security on" step -- write access to Virtuoso's SPARQL Update endpoint always requires this
+    password.
+2.  Lock down anonymous reads -- by default, Virtuoso's unauthenticated `/sparql` endpoint can
+    read every graph in the store. The installer runs a one-time SQL script
+    (`virtuoso-initdb/lockdown-anonymous-sparql.sql`) when it first creates the database that
+    removes this default. FDP's own REST API remains the intended public-read interface for your
+    metadata, with its own access model -- this only closes the raw triple-store's direct SPARQL
+    endpoint as a separate, unnecessary attack surface.
 
 
-| Username | Password |
-| -------- | -------- |
-| `admin`  | `root`   |
 
-1.  Change the admin password
-2.  Create a new user with read/write permissions on the *ACME-r2f-external* database
-3.  Ensure that secured access is switched ON
+#### Querying your data: why Conductor's SPARQL box shows nothing
 
+The natural way to check what is in the triple store is to open Virtuoso Conductor
+(`http://localhost:<your Virtuoso port>/conductor`, log in as `dba`), go to **Linked Data > SPARQL**,
+and run something like `select distinct ?t where {?s a ?t}`. **This will return no rows, even though
+your metadata is there and you are logged in as `dba`.** It does not mean the store is empty.
+
+This is a side-effect of the anonymous-read lockdown described above, not a bug. Virtuoso's plain
+`/sparql` endpoint serves unauthenticated requests as its built-in anonymous `nobody` user, and the
+installer has removed that user's read access to every graph -- so it (correctly) sees an empty
+store. Being logged in to Conductor doesn't help: as far as we can tell the SPARQL box there queries
+that same anonymous endpoint, and returns an empty result (just the column header) instead of an
+error. Your data is only visible through a Digest-authenticated request. Any of these work:
+
+*   **The authenticated SPARQL form:** open `http://localhost:<your Virtuoso port>/sparql-auth` and,
+    when the browser prompts, log in as `dba` with the password from your `.env`
+    (`TRIPLESTORE_PASS`). This is the same query editor, but runs as `dba`.
+*   **Conductor's Interactive SQL (ISQL)**, in Conductor's left-hand menu. Prefix the query with
+    `SPARQL` and end it with a semicolon: `SPARQL select distinct ?t where {?s a ?t};`
+*   **The command line:**
+    ```
+    curl --digest -u dba:$TRIPLESTORE_PASS http://localhost:<your Virtuoso port>/sparql-auth \
+      -H 'Accept: text/csv' --data-urlencode 'query=select distinct ?t where {?s a ?t}'
+    ```
+
+Queries run as `dba` also return Virtuoso's own system types and graphs mixed in with yours. To hide
+them, filter e.g. `FILTER(!STRSTARTS(STR(?t), "http://www.openlinksw.com"))`, or restrict the query to
+your FDP's own graphs.
+
+**Please don't "fix" this by giving the anonymous user read access back**
+(`DB.DBA.RDF_DEFAULT_USER_PERMS_SET('nobody', 1)` or similar). That would make every graph in the
+store readable by anyone who can reach the Virtuoso port, which is exactly the exposure the
+lockdown exists to prevent (FDP's own REST API is the intended public-read interface). A convenient Conductor SPARQL box is not worth it;
+use one of the authenticated routes above.
 
 #### FAIR Data Point Client
 
@@ -176,16 +232,16 @@ Note that you need the Administrator credentials to login to the FAIR Data Point
 
 <a name="branding"></a>
 
-## Branding your R2F External server
+## Branding your External server
 
 #### Update the colors and logo
 
-- go to the `ACME-R2F-External/fdp` folder
+- go to the `ACME-R2F-external/fdp` folder
 - add your preferred logo file into the ./assets subfolder
 - edit the ./variables.scss to point to that new logo file, and select its display size (or keep the default)
 - to change the default colors, edit the first two lines to select the primary and secondary colors (the horizontal bar on the default http://localhost:7070 homepage shows the primary color on the left and the secondary color on the right)
 - if you have a preferred favicon, replace the one in that folder with your preferred one.
-- now go back to the ACME-R2F-External folder and bring the docker-compose back up. Your FDP client will now be customized with your preferred icons and colors
+- now go back to the ACME-R2F-external folder and bring the docker-compose back up. Your FDP client will now be customized with your preferred icons and colors
 
 <a name="onboarding"></a>
 
@@ -194,7 +250,7 @@ Note that you need the Administrator credentials to login to the FAIR Data Point
 To register yourself with the central index of FAIR Data Points (e.g. the ERDERA FDP Index) you need to edit one file
 
 ```
-~/SERVERS/ACME-R2F-External/fdp/application.yml
+~/SERVERS/ACME-R2F-external/fdp/application.yml
 
 ```
 
