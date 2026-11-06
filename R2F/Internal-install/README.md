@@ -111,6 +111,11 @@ Your Internal server is now running at whatever port you selected.
 In principle, none of these components will have any internet-facing interfaces; nevertheless
 Virtuoso is secured as part of installation.
 
+Every image we ship is scanned for known vulnerabilities, and the full, unfiltered results are
+published -- see [Security & vulnerability transparency](../Security/VULNERABILITY_TRIAGE.md) for
+how to look up what applies to the image tag you're running, and how to read our disposition on
+each open finding before you decide to deploy or update.
+
 These are the default login details and locations:
 
 #### Virtuoso

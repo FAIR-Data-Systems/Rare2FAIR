@@ -21,3 +21,5 @@ R2F Internal is an optional second component that includes software for executin
 
 [Installing R2F Internal](./R2F/Internal-install/)
 
+[Security & vulnerability transparency](./R2F/Security/VULNERABILITY_TRIAGE.md) -- every CRITICAL/HIGH finding from our image scans, and whether it's safe to deploy
+

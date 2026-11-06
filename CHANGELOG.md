@@ -32,7 +32,23 @@ also freshly rebuilt/rescanned as of this release (`fairdatasystems/*:2026-11-06
 - `FDP_Configs/ERDERA_Base/Dockerfile` now runs as a non-root `erdera` user (parity with Sextans
   Suite — this had fallen out of sync).
 
+### Added
+
+- **Published partner-facing vulnerability transparency documentation**, in a new `R2F/Security/`
+  folder: `vulnerability-register.csv`, the backing per-image Trivy scan output, and a
+  `VULNERABILITY_TRIAGE.md` explaining in plain terms how to read the `Decision`/`ExposureTier`
+  columns for a deploy decision. Linked from the top-level README and the "Securing your server"
+  section of both `Internal-install/README.md` and `External-install/README.md`. Mirrored from
+  the same scan/triage process Sextans Suite publishes under its own `Security/` folder — this
+  repo has no build/patch tooling of its own, just the published results, carried forward at each
+  release.
+
 ### Fixed
+
+- **`care2` (CARE-SM-2 Toolkit) shipped an unpatched Alpine OS layer** (1 CRITICAL + ~18 HIGH,
+  all OS-layer — its Dockerfile never ran `apk upgrade`). Fixed upstream, rebuilt, rescanned
+  clean, re-pushed under the same `fairdatasystems/care2:2026-11-06` tag used by this release — no
+  compose file changes needed, since the tag didn't change.
 
 - **`install-internal.sh`'s data-folder permissions now cover files added after install, not just
   what's present at install time.** `cde-box-daemon`/`yarrrml-rdfizer` run as a fixed container UID

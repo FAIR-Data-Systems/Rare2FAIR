@@ -150,6 +150,11 @@ __Nota Bene: This script can only be run one time!__  Please do not run it again
 
 There are two components that you need to be aware of:  Virtuoso and the FAIR Data Point Client.
 
+Every image we ship is scanned for known vulnerabilities, and the full, unfiltered results are
+published -- see [Security & vulnerability transparency](../Security/VULNERABILITY_TRIAGE.md) for
+how to look up what applies to the image tag you're running, and how to read our disposition on
+each open finding before you decide to deploy or update.
+
 #### Virtuoso
 
 | Service name | Local deployment                                | Production deployment |
