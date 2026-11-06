@@ -103,7 +103,7 @@ Once you have completed the "Downloading" section of this tutorial, and you have
 bash ./install-external.sh
 ```
 
-This script will bootstrap your FAIR Data Point and its associated Virtuoso instance, secured with the password you chose. Your metadata is stored in Virtuoso's single database (unlike GraphDB, it has no separate "repositories" to create).
+This script will bootstrap your FAIR Data Point and its associated Virtuoso instance, secured with the password you chose. Your metadata is stored in Virtuoso's single database.
 
 ### If you abort installation before it completes...
 
@@ -162,9 +162,8 @@ at the "Virtuoso dba password" prompt:
 1.  Set the `dba` superuser's password -- done automatically during installation, via Virtuoso's
     own `DBA_PASSWORD` startup setting. Your chosen password is stored (file mode 600) in
     `application-ACME.yml` and `.env`, alongside a freshly-generated JWT signing secret for the
-    FDP server (also no longer a fixed shared value). Unlike GraphDB, there's no separate "turn
-    security on" step -- write access to Virtuoso's SPARQL Update endpoint always requires this
-    password.
+    FDP server. There's no separate "turn security on" step -- write access to Virtuoso's SPARQL
+    Update endpoint always requires this password.
 2.  Lock down anonymous reads -- by default, Virtuoso's unauthenticated `/sparql` endpoint can
     read every graph in the store. The installer runs a one-time SQL script
     (`virtuoso-initdb/lockdown-anonymous-sparql.sql`) when it first creates the database that
