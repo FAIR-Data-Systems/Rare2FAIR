@@ -4,6 +4,15 @@ All notable changes to Rare2FAIR are documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Changed
+
+- The vulnerability register's `ACCEPT` decision is now called `NOT REACHABLE` (same meaning: the vulnerable
+  code can't be reached in our deployment). "Accepted" reads as "known risk, tolerated", which it never
+  meant. 29 rows relabelled, nothing else changed; the partner legend in `R2F/Security/VULNERABILITY_TRIAGE.md`
+  now also says that the `ExposureTier` 3 rows rest on a judgment about the whole bundled component.
+
 ## [2.0.0] - 2026-11-06
 
 Full migration onto the architecture Sextans Suite has been running since its own 2.0.0-3.2.0
